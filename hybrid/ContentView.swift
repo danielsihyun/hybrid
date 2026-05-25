@@ -10,5 +10,9 @@ struct ContentView: View {
             PlansView()
                 .tabItem { Label("Plans", systemImage: "list.bullet.rectangle") }
         }
+        .preferredColorScheme(.dark)
+        .toolbarBackground(Color.appCard, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
+        .tint(Color.eCyan)
     }
 }

@@ -34,7 +34,9 @@ struct LoggingFlowView: View {
     @State private var initialized = false
 
     var body: some View {
-        NavigationStack {
+        ZStack {
+            Color.appBg.ignoresSafeArea()
+
             Group {
                 if entries.isEmpty {
                     ContentUnavailableView("No Exercises", systemImage: "dumbbell")
@@ -42,6 +44,11 @@ struct LoggingFlowView: View {
                     VStack(spacing: 0) {
                         // Progress header
                         progressHeader
+
+                        // Overview panel
+                        if showOverview {
+                            overviewPanel
+                        }
 
                         TabView(selection: $currentIndex) {
                             ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
@@ -55,104 +62,206 @@ struct LoggingFlowView: View {
                     }
                 }
             }
-            .navigationTitle(workoutDay.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showOverview = true
-                    } label: {
-                        Image(systemName: "list.bullet")
-                    }
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    Button {
-                        showDatePicker = true
-                    } label: {
-                        Label("Date", systemImage: "calendar")
-                    }
-                }
-            }
-            .sheet(isPresented: $showOverview) {
-                SessionOverviewSheet(entries: entries, currentIndex: $currentIndex)
-            }
-            .sheet(isPresented: $showDatePicker) {
-                DatePickerSheet(date: $sessionDate)
-            }
-            .onAppear {
-                if !initialized {
-                    initialized = true
-                    sessionDate = backfillDate ?? .now
-                    buildEntries()
-                }
+        }
+        .sheet(isPresented: $showDatePicker) {
+            DatePickerSheet(date: $sessionDate)
+        }
+        .onAppear {
+            if !initialized {
+                initialized = true
+                sessionDate = backfillDate ?? .now
+                buildEntries()
             }
         }
+        .preferredColorScheme(.dark)
     }
 
-    // MARK: - Sub-views
+    // MARK: - Progress Header
 
     private var progressHeader: some View {
-        VStack(spacing: 4) {
-            HStack {
-                Text("Lift \(currentIndex + 1) of \(entries.count)")
-                    .font(.subheadline.bold())
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
+                // X button
+                Button {
+                    dismiss()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.appMuted)
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+
                 Spacer()
-                Text(sessionDate, style: .date)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                VStack(spacing: 2) {
+                    Text(workoutDay.name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("\(currentIndex + 1) of \(entries.count)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.appSubtext)
+                }
+
+                Spacer()
+
+                // Overview toggle button
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showOverview.toggle()
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.appMuted)
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(showOverview ? Color.eCyan : .white)
+                    }
+                }
             }
-            ProgressView(value: Double(currentIndex + 1), total: Double(entries.count))
-                .tint(.accentColor)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(Color.appCard)
+
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Color.appMuted
+                    LinearGradient.cyan
+                        .frame(width: geo.size.width * CGFloat(currentIndex + 1) / CGFloat(max(entries.count, 1)))
+                        .animation(.easeInOut(duration: 0.3), value: currentIndex)
+                }
+            }
+            .frame(height: 8)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(.bar)
     }
 
+    // MARK: - Overview Panel
+
+    private var overviewPanel: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
+                    let isActive = idx == currentIndex
+                    let isDone = entry.sets.contains { $0.committed && (!$0.weight.isEmpty || !$0.reps.isEmpty) }
+                    Button {
+                        withAnimation { currentIndex = idx }
+                        withAnimation(.easeInOut(duration: 0.25)) { showOverview = false }
+                    } label: {
+                        HStack(spacing: 8) {
+                            // Number badge
+                            ZStack {
+                                Circle()
+                                    .fill(isActive ? .black.opacity(0.3) : Color.appBg)
+                                    .frame(width: 24, height: 24)
+                                Text("\(idx + 1)")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(isActive ? .black : Color.appSubtext)
+                            }
+                            Text(entry.planExercise.exercise?.name ?? "Exercise")
+                                .font(.system(size: 13, weight: .semibold))
+                                .lineLimit(1)
+                                .foregroundStyle(isActive ? .black : .white)
+                            if isDone {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(isActive ? .black : Color.eGreen)
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(isActive ? LinearGradient.cyan : LinearGradient(colors: [Color.appMuted, Color.appMuted], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .background(Color.appCard)
+        .overlay(
+            Rectangle()
+                .frame(height: 1)
+                .foregroundStyle(Color.appBorder),
+            alignment: .bottom
+        )
+    }
+
+    // MARK: - Bottom Bar
+
     private var bottomBar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             if currentIndex > 0 {
                 Button {
                     withAnimation { currentIndex -= 1 }
                 } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(width: 44, height: 44)
-                        .background(.secondary.opacity(0.15), in: Circle())
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Prev")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(height: 56)
+                    .padding(.horizontal, 20)
+                    .background(Color.appMuted)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }
-
-            Spacer()
 
             if currentIndex < entries.count - 1 {
                 Button {
                     withAnimation { currentIndex += 1 }
                 } label: {
-                    Text("Next")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 12)
-                        .background(Color.accentColor, in: Capsule())
+                    HStack(spacing: 8) {
+                        Text("Next")
+                            .font(.system(size: 15, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(LinearGradient.cyan)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: Color(red: 0, green: 0.851, blue: 1).opacity(0.3), radius: 15)
                 }
             } else {
                 Button {
                     finishWorkout()
                 } label: {
-                    Text("Finish Workout")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(Color.green, in: Capsule())
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Finish Workout")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(LinearGradient.green)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: Color(red: 0, green: 1, blue: 0.533).opacity(0.3), radius: 15)
                 }
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(.bar)
+        .background(
+            Color.appCard
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundStyle(Color.appBorder),
+                    alignment: .top
+                )
+        )
     }
 
     // MARK: - Logic
@@ -222,58 +331,122 @@ struct ExerciseLoggingCard: View {
         return "\(s.reps[setIndex])"
     }
 
+    private func acceptWeightSuggestion() {
+        guard let s = suggestion, s.weight > 0 else { return }
+        let raw = s.weight.formatted(.number.precision(.fractionLength(0...1)))
+        for idx in entry.sets.indices {
+            if entry.sets[idx].weight.isEmpty {
+                entry.sets[idx].weight = raw
+                entry.sets[idx].committed = true
+            }
+        }
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Exercise name
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .center, spacing: 24) {
+
+                // Exercise header
+                VStack(spacing: 10) {
+                    // Set count pill
+                    Text("\(entry.sets.count) SETS")
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(2)
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(LinearGradient.cyan)
+                        .clipShape(Capsule())
+
                     Text(entry.planExercise.exercise?.name ?? "Exercise")
-                        .font(.largeTitle.bold())
+                        .font(.system(size: 36, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+
                     if let group = entry.planExercise.exercise?.muscleGroup {
                         Text(group.rawValue)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.appSubtext)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
 
-                if let s = suggestion {
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock.arrow.circlepath")
-                        Text("Last: \(s.weight.formatted()) \(s.exercise?.defaultUnit.rawValue ?? "lb") · \(s.reps.map(String.init).joined(separator: ", ")) reps")
-                            .lineLimit(1)
+                // Weight input card
+                VStack(spacing: 10) {
+                    ZStack(alignment: .topTrailing) {
+                        ZStack(alignment: .center) {
+                            LinearGradient(
+                                colors: [Color.appCard, Color.appMuted],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .strokeBorder(Color.appBorder, lineWidth: 2)
+                            )
+
+                            if entry.sets.indices.contains(0) {
+                                WeightFieldOverlay(
+                                    weightEntry: $entry.sets[0].weight,
+                                    committed: $entry.sets[0].committed,
+                                    suggestionWeight: suggestionWeight
+                                )
+                                .frame(height: 80)
+                            }
+                        }
+                        .frame(height: 100)
+
+                        // "Last: X" badge
+                        if !suggestionWeight.isEmpty {
+                            Text("Last: \(suggestionWeight)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color.eCyan)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.appCard)
+                                .clipShape(Capsule())
+                                .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: 1))
+                                .offset(x: -12, y: -10)
+                        }
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
+
+                    // "Use X from last session" button
+                    if !suggestionWeight.isEmpty {
+                        Button {
+                            acceptWeightSuggestion()
+                        } label: {
+                            Text("Use \(suggestionWeight) from last session")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Color.eCyan)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.appMuted)
+                                .clipShape(RoundedRectangle(cornerRadius: 20))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 if !entry.planExercise.note.isEmpty {
                     Text(entry.planExercise.note)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 20)
+                        .foregroundStyle(Color.appSubtext)
+                        .padding(.horizontal, 24)
                 }
 
-                // Sets
-                VStack(spacing: 0) {
-                    // Header row
-                    HStack {
-                        Text("Set")
-                            .frame(width: 40, alignment: .leading)
-                        Text("Weight")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Reps")
-                            .frame(width: 70, alignment: .trailing)
-                    }
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
+                // Sets section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("REPS PER SET")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(2.5)
+                        .foregroundStyle(Color.appSubtext)
+                        .padding(.horizontal, 24)
 
                     ForEach(Array(entry.sets.enumerated()), id: \.element.id) { idx, _ in
-                        SetRow(
+                        StyledSetRow(
                             setNumber: idx + 1,
                             weightEntry: $entry.sets[idx].weight,
                             repsEntry: $entry.sets[idx].reps,
@@ -281,6 +454,7 @@ struct ExerciseLoggingCard: View {
                             suggestionWeight: suggestionWeight,
                             suggestionReps: suggestionReps(setIndex: idx)
                         )
+                        .padding(.horizontal, 24)
                     }
                 }
 
@@ -290,26 +464,71 @@ struct ExerciseLoggingCard: View {
                         entry.sets.append(SetEntry())
                     } label: {
                         Label("Add Set", systemImage: "plus")
-                            .font(.subheadline)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.eCyan)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 10)
+                            .background(Color.appMuted)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     if entry.sets.count > 1 {
                         Button(role: .destructive) {
                             entry.sets.removeLast()
                         } label: {
-                            Label("Remove Set", systemImage: "minus")
-                                .font(.subheadline)
+                            Label("Remove", systemImage: "minus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.red.opacity(0.8))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 10)
+                                .background(Color.appMuted)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
         }
+        .background(Color.appBg)
     }
 }
 
-// MARK: - SetRow
-struct SetRow: View {
+// MARK: - Weight Field Overlay (for the large centered weight display)
+struct WeightFieldOverlay: View {
+    @Binding var weightEntry: String
+    @Binding var committed: Bool
+    var suggestionWeight: String
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        ZStack(alignment: .center) {
+            if weightEntry.isEmpty && !suggestionWeight.isEmpty {
+                Text(suggestionWeight)
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(Color.appSubtext)
+                    .onTapGesture {
+                        let raw = suggestionWeight.components(separatedBy: " ").first ?? ""
+                        weightEntry = raw
+                        committed = true
+                        isFocused = true
+                    }
+            }
+            TextField("0", text: $weightEntry)
+                .keyboardType(.decimalPad)
+                .focused($isFocused)
+                .multilineTextAlignment(.center)
+                .font(.system(size: 40, weight: .bold))
+                .foregroundStyle(.white)
+                .onChange(of: weightEntry) { _, _ in committed = true }
+                .opacity(weightEntry.isEmpty && !suggestionWeight.isEmpty ? 0 : 1)
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Styled Set Row
+struct StyledSetRow: View {
     let setNumber: Int
     @Binding var weightEntry: String
     @Binding var repsEntry: String
@@ -323,17 +542,22 @@ struct SetRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("\(setNumber)")
-                .font(.subheadline.bold())
-                .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .leading)
+            // Numbered badge
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient.cyan)
+                    .frame(width: 36, height: 36)
+                Text("\(setNumber)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.black)
+            }
 
             // Weight field with gray suggestion
-            ZStack(alignment: .leading) {
+            ZStack(alignment: .center) {
                 if weightEntry.isEmpty && !suggestionWeight.isEmpty {
                     Text(suggestionWeight)
-                        .foregroundStyle(.secondary.opacity(0.6))
-                        .font(.body)
+                        .foregroundStyle(Color.appSubtext)
+                        .font(.system(size: 24, weight: .semibold))
                         .onTapGesture {
                             weightEntry = String(suggestionWeight.components(separatedBy: " ").first ?? "")
                             committed = true
@@ -343,18 +567,24 @@ struct SetRow: View {
                 TextField("0", text: $weightEntry)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: .weight)
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white)
                     .onChange(of: weightEntry) { _, _ in committed = true }
                     .opacity(weightEntry.isEmpty && !suggestionWeight.isEmpty ? 0 : 1)
             }
             .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(Color.appCard)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.appBorder, lineWidth: 1))
 
             // Reps field with gray suggestion
-            ZStack(alignment: .trailing) {
+            ZStack(alignment: .center) {
                 if repsEntry.isEmpty && !suggestionReps.isEmpty {
                     Text(suggestionReps)
-                        .foregroundStyle(.secondary.opacity(0.6))
-                        .font(.body)
-                        .frame(width: 70, alignment: .trailing)
+                        .foregroundStyle(Color.appSubtext)
+                        .font(.system(size: 24, weight: .semibold))
                         .onTapGesture {
                             repsEntry = suggestionReps
                             committed = true
@@ -364,15 +594,18 @@ struct SetRow: View {
                 TextField("0", text: $repsEntry)
                     .keyboardType(.numberPad)
                     .focused($focusedField, equals: .reps)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 70)
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white)
                     .onChange(of: repsEntry) { _, _ in committed = true }
                     .opacity(repsEntry.isEmpty && !suggestionReps.isEmpty ? 0 : 1)
             }
+            .frame(width: 80)
+            .frame(height: 54)
+            .background(Color.appCard)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.appBorder, lineWidth: 1))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background(setNumber % 2 == 0 ? Color.clear : Color.secondary.opacity(0.05))
     }
 }
 
@@ -384,25 +617,30 @@ struct SessionOverviewSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
-                    let done = entry.sets.contains { $0.committed && (!$0.weight.isEmpty || !$0.reps.isEmpty) }
-                    Button {
-                        currentIndex = idx
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(done ? .green : .secondary)
-                            Text(entry.planExercise.exercise?.name ?? "Exercise")
-                            Spacer()
-                            Text("\(entry.sets.count) sets")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+            ZStack {
+                Color.appBg.ignoresSafeArea()
+                List {
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
+                        let done = entry.sets.contains { $0.committed && (!$0.weight.isEmpty || !$0.reps.isEmpty) }
+                        Button {
+                            currentIndex = idx
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(done ? Color.eGreen : Color.appSubtext)
+                                Text(entry.planExercise.exercise?.name ?? "Exercise")
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                Text("\(entry.sets.count) sets")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.appSubtext)
+                            }
                         }
+                        .listRowBackground(Color.appCard)
                     }
-                    .foregroundStyle(.primary)
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Session Overview")
             .navigationBarTitleDisplayMode(.inline)
@@ -412,6 +650,7 @@ struct SessionOverviewSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -434,5 +673,6 @@ struct DatePickerSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }

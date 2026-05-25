@@ -23,40 +23,56 @@ struct ExerciseLibraryView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(sortedGroups, id: \.self) { group in
-                    Section(group.rawValue) {
-                        ForEach(grouped[group] ?? []) { exercise in
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.name)
-                                        .font(.headline)
-                                    if exercise.isCustom {
-                                        Text("Custom")
-                                            .font(.caption2.bold())
+            ZStack {
+                Color.appBg.ignoresSafeArea()
+
+                List {
+                    ForEach(sortedGroups, id: \.self) { group in
+                        Section {
+                            ForEach(grouped[group] ?? []) { exercise in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(exercise.name)
+                                            .font(.system(size: 16, weight: .bold))
                                             .foregroundStyle(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.accentColor, in: Capsule())
+                                        if exercise.isCustom {
+                                            Text("Custom")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(.black)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 3)
+                                                .background(LinearGradient.cyan)
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                    Spacer()
+                                    Text(exercise.defaultUnit.rawValue)
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color.appSubtext)
+                                }
+                                .padding(.vertical, 2)
+                                .listRowBackground(Color.appCard)
+                                .listRowSeparatorTint(Color.appBorder)
+                                .swipeActions(edge: .trailing) {
+                                    if exercise.isCustom {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(exercise)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
-                                Spacer()
-                                Text(exercise.defaultUnit.rawValue)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
                             }
-                            .swipeActions(edge: .trailing) {
-                                if exercise.isCustom {
-                                    Button(role: .destructive) {
-                                        modelContext.delete(exercise)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                            }
+                        } header: {
+                            // Cyan muscle group section header
+                            Text(group.rawValue.uppercased())
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(2)
+                                .foregroundStyle(Color.eCyan)
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
             .searchable(text: $searchText, prompt: "Search exercises")
             .navigationTitle("Exercise Library")
@@ -67,6 +83,7 @@ struct ExerciseLibraryView: View {
                         showCreateSheet = true
                     } label: {
                         Image(systemName: "plus")
+                            .foregroundStyle(Color.eCyan)
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
@@ -77,6 +94,8 @@ struct ExerciseLibraryView: View {
                 CreateExerciseSheet()
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(Color.eCyan)
     }
 }
 
@@ -137,5 +156,7 @@ struct CreateExerciseSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(Color.eCyan)
     }
 }

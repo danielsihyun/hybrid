@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BB000002THEME00000000001 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000001THEME00000000001 /* Theme.swift */; };
 		44C630B42D788EE189999F91 /* hybridApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA50E3BAD81C6469945D90C /* hybridApp.swift */; };
 		C3AB638F43D5794BD6705E90 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29815555C9B953B70E53E853 /* ContentView.swift */; };
 		279FD8F86F08FECCAF002947 /* Exercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = D77A905D0F7055757C6A75B9 /* Exercise.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BB000001THEME00000000001 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
 		6FA50E3BAD81C6469945D90C /* hybridApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "hybridApp.swift"; sourceTree = "<group>"; };
 		29815555C9B953B70E53E853 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
 		D77A905D0F7055757C6A75B9 /* Exercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exercise.swift"; sourceTree = "<group>"; };
@@ -71,6 +73,7 @@
 			children = (
 				6FA50E3BAD81C6469945D90C /* hybridApp.swift */,
 				29815555C9B953B70E53E853 /* ContentView.swift */,
+				BB000001THEME00000000001 /* Theme.swift */,
 				6DD16DA81E5D4F5F58216251 /* Assets.xcassets */,
 				BC8E6A5FDB0FEE50AF1B10E7 /* Models */,
 				F867080DDDCAA8CC74A91BE2 /* Views */,
@@ -209,6 +212,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB000002THEME00000000001 /* Theme.swift in Sources */,
 				44C630B42D788EE189999F91 /* hybridApp.swift in Sources */,
 				C3AB638F43D5794BD6705E90 /* ContentView.swift in Sources */,
 				279FD8F86F08FECCAF002947 /* Exercise.swift in Sources */,

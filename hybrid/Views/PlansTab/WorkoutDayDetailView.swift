@@ -14,52 +14,67 @@ struct WorkoutDayDetailView: View {
     }
 
     var body: some View {
-        List {
-            if ordered.isEmpty {
-                Text("No exercises. Tap + to add from the library.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(ordered, id: \.id) { pe in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(pe.exercise?.name ?? "Unknown Exercise")
-                                .font(.headline)
-                            HStack {
-                                Text(pe.exercise?.muscleGroup.rawValue ?? "")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                if !pe.note.isEmpty {
-                                    Text("· \(pe.note)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
+        ZStack {
+            Color.appBg.ignoresSafeArea()
+
+            List {
+                if ordered.isEmpty {
+                    Text("No exercises. Tap + to add from the library.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.appSubtext)
+                        .listRowBackground(Color.appCard)
+                } else {
+                    ForEach(ordered, id: \.id) { pe in
+                        HStack(spacing: 14) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(pe.exercise?.name ?? "Unknown Exercise")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                                HStack(spacing: 6) {
+                                    Text(pe.exercise?.muscleGroup.rawValue ?? "")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.appSubtext)
+                                    if !pe.note.isEmpty {
+                                        Text("· \(pe.note)")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(Color.appSubtext)
+                                            .lineLimit(1)
+                                    }
                                 }
                             }
+                            Spacer()
+                            // Set count cyan badge
+                            Text("\(pe.sets) sets")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color.eCyan)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.eCyan.opacity(0.12))
+                                .clipShape(Capsule())
+                            Button {
+                                editingExercise = pe
+                            } label: {
+                                Image(systemName: "pencil.circle")
+                                    .foregroundStyle(Color.eCyan)
+                                    .font(.system(size: 20))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        Spacer()
-                        Text("\(pe.sets) sets")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Button {
-                            editingExercise = pe
-                        } label: {
-                            Image(systemName: "pencil.circle")
-                                .foregroundStyle(Color.accentColor)
+                        .padding(.vertical, 4)
+                        .listRowBackground(Color.appCard)
+                        .listRowSeparatorTint(Color.appBorder)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                removeExercise(pe)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 2)
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            removeExercise(pe)
-                        } label: {
-                            Label("Remove", systemImage: "trash")
-                        }
-                    }
+                    .onMove(perform: moveExercises)
                 }
-                .onMove(perform: moveExercises)
             }
+            .scrollContentBackground(.hidden)
         }
         .navigationTitle(workoutDay.name)
         .navigationBarTitleDisplayMode(.large)
@@ -69,6 +84,7 @@ struct WorkoutDayDetailView: View {
                     showExercisePicker = true
                 } label: {
                     Image(systemName: "plus")
+                        .foregroundStyle(Color.eCyan)
                 }
             }
             ToolbarItem(placement: .secondaryAction) {
@@ -128,22 +144,27 @@ struct ExercisePickerSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(MuscleGroup.allCases, id: \.self) { group in
-                    if let exs = grouped[group], !exs.isEmpty {
-                        Section(group.rawValue) {
-                            ForEach(exs) { exercise in
-                                Button {
-                                    onSelect(exercise)
-                                    dismiss()
-                                } label: {
-                                    Text(exercise.name)
-                                        .foregroundStyle(.primary)
+            ZStack {
+                Color.appBg.ignoresSafeArea()
+                List {
+                    ForEach(MuscleGroup.allCases, id: \.self) { group in
+                        if let exs = grouped[group], !exs.isEmpty {
+                            Section(group.rawValue) {
+                                ForEach(exs) { exercise in
+                                    Button {
+                                        onSelect(exercise)
+                                        dismiss()
+                                    } label: {
+                                        Text(exercise.name)
+                                            .foregroundStyle(.white)
+                                    }
+                                    .listRowBackground(Color.appCard)
                                 }
                             }
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
             .searchable(text: $searchText, prompt: "Search exercises")
             .navigationTitle("Add Exercise")
@@ -154,6 +175,7 @@ struct ExercisePickerSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -171,6 +193,7 @@ struct EditPlanExerciseSheet: View {
                 Section("Exercise") {
                     Text(planExercise.exercise?.name ?? "Unknown")
                         .font(.headline)
+                        .foregroundStyle(.white)
                 }
                 Section("Sets") {
                     Stepper("\(planExercise.sets) sets", value: $planExercise.sets, in: 1...20)
@@ -187,5 +210,7 @@ struct EditPlanExerciseSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(Color.eCyan)
     }
 }

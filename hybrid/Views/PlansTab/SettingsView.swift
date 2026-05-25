@@ -27,7 +27,7 @@ struct SettingsView: View {
                     Button("Apply unit to all exercises") {
                         applyUnitToAll()
                     }
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.eCyan)
                 }
 
                 Section("Calendar") {
@@ -43,13 +43,13 @@ struct SettingsView: View {
                         Text("App")
                         Spacer()
                         Text("hybrid")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.appSubtext)
                     }
                     HStack {
                         Text("Version")
                         Spacer()
                         Text("1.0")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.appSubtext)
                     }
                 }
 
@@ -73,6 +73,8 @@ struct SettingsView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(Color.eCyan)
     }
 
     private func applyUnitToAll() {

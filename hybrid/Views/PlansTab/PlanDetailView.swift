@@ -11,79 +11,100 @@ struct PlanDetailView: View {
     @State private var dayToDelete: WorkoutDay? = nil
 
     var body: some View {
-        List {
-            // Schedule section
-            Section {
-                Button {
-                    showScheduleEditor = true
-                } label: {
-                    HStack {
-                        Text("Weekly Schedule")
-                        Spacer()
-                        weekScheduleSummary
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .foregroundStyle(.primary)
-            } header: {
-                Text("Schedule")
-            }
+        ZStack {
+            Color.appBg.ignoresSafeArea()
 
-            // Workout Days section
-            Section {
-                if plan.workoutDays.isEmpty {
-                    Text("No workout days yet. Tap + to add one.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(plan.workoutDays.sorted { $0.name < $1.name }) { day in
-                        NavigationLink {
-                            WorkoutDayDetailView(workoutDay: day, plan: plan)
-                        } label: {
-                            HStack {
-                                Text(day.name)
-                                Spacer()
-                                Text("\(day.planExercises.count) exercises")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                deleteDay(day)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("Workout Days")
-                    Spacer()
+            List {
+                // Schedule section
+                Section {
                     Button {
-                        showNewDaySheet = true
+                        showScheduleEditor = true
                     } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-
-            // Activate section
-            Section {
-                Toggle("Active Plan", isOn: $plan.isActive)
-                    .onChange(of: plan.isActive) { _, newValue in
-                        if newValue {
-                            // Deactivate others via context
-                            activateThisPlan()
+                        HStack {
+                            Text("Weekly Schedule")
+                                .foregroundStyle(.white)
+                            Spacer()
+                            weekScheduleSummary
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(Color.appSubtext)
                         }
                     }
+                    .listRowBackground(Color.appCard)
+                } header: {
+                    Text("SCHEDULE")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(2)
+                        .foregroundStyle(Color.appSubtext)
+                }
+
+                // Workout Days section
+                Section {
+                    if plan.workoutDays.isEmpty {
+                        Text("No workout days yet. Tap + to add one.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.appSubtext)
+                            .listRowBackground(Color.appCard)
+                    } else {
+                        ForEach(plan.workoutDays.sorted { $0.name < $1.name }) { day in
+                            NavigationLink {
+                                WorkoutDayDetailView(workoutDay: day, plan: plan)
+                            } label: {
+                                HStack {
+                                    Text(day.name)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    Text("\(day.planExercises.count) exercises")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color.appSubtext)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                            .listRowBackground(Color.appCard)
+                            .listRowSeparatorTint(Color.appBorder)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    deleteDay(day)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("WORKOUT DAYS")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(2)
+                            .foregroundStyle(Color.appSubtext)
+                        Spacer()
+                        Button {
+                            showNewDaySheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(Color.eCyan)
+                        }
+                    }
+                }
+
+                // Activate section
+                Section {
+                    Toggle("Active Plan", isOn: $plan.isActive)
+                        .onChange(of: plan.isActive) { _, newValue in
+                            if newValue {
+                                activateThisPlan()
+                            }
+                        }
+                        .tint(Color.eCyan)
+                    .listRowBackground(Color.appCard)
+                }
             }
+            .scrollContentBackground(.hidden)
         }
         .navigationTitle(plan.name)
         .navigationBarTitleDisplayMode(.large)
+        .tint(Color.eCyan)
         .alert("New Workout Day", isPresented: $showNewDaySheet) {
             TextField("Day name (e.g. Push, Pull, Legs)", text: $newDayName)
             Button("Add") {
@@ -105,10 +126,15 @@ struct PlanDetailView: View {
             ForEach(Weekday.allCases, id: \.rawValue) { day in
                 let hasWorkout = plan.workoutDay(for: day) != nil
                 Text(day.short)
-                    .font(.caption2.bold())
-                    .foregroundStyle(hasWorkout ? .white : .secondary)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(hasWorkout ? .black : Color.appSubtext)
                     .frame(width: 26, height: 20)
-                    .background(hasWorkout ? Color.accentColor : Color.secondary.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                    .background(
+                        hasWorkout
+                            ? AnyShapeStyle(LinearGradient.cyan)
+                            : AnyShapeStyle(Color.appMuted),
+                        in: RoundedRectangle(cornerRadius: 4)
+                    )
             }
         }
     }
@@ -141,33 +167,41 @@ struct ScheduleEditorView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(Weekday.allCases, id: \.rawValue) { weekday in
-                    HStack {
-                        Text(weekday.name)
-                            .frame(width: 110, alignment: .leading)
+            ZStack {
+                Color.appBg.ignoresSafeArea()
 
-                        Spacer()
+                List {
+                    ForEach(Weekday.allCases, id: \.rawValue) { weekday in
+                        HStack {
+                            Text(weekday.name)
+                                .foregroundStyle(.white)
+                                .frame(width: 110, alignment: .leading)
 
-                        Picker("", selection: Binding(
-                            get: { plan.workoutDay(for: weekday)?.id },
-                            set: { newID in
-                                if let newID {
-                                    let wd = plan.workoutDays.first { $0.id == newID }
-                                    plan.setWorkoutDay(wd, for: weekday)
-                                } else {
-                                    plan.setWorkoutDay(nil, for: weekday)
+                            Spacer()
+
+                            Picker("", selection: Binding(
+                                get: { plan.workoutDay(for: weekday)?.id },
+                                set: { newID in
+                                    if let newID {
+                                        let wd = plan.workoutDays.first { $0.id == newID }
+                                        plan.setWorkoutDay(wd, for: weekday)
+                                    } else {
+                                        plan.setWorkoutDay(nil, for: weekday)
+                                    }
+                                }
+                            )) {
+                                Text("Rest").tag(Optional<UUID>.none)
+                                ForEach(plan.workoutDays.sorted { $0.name < $1.name }) { wd in
+                                    Text(wd.name).tag(Optional(wd.id))
                                 }
                             }
-                        )) {
-                            Text("Rest").tag(Optional<UUID>.none)
-                            ForEach(plan.workoutDays.sorted { $0.name < $1.name }) { wd in
-                                Text(wd.name).tag(Optional(wd.id))
-                            }
+                            .pickerStyle(.menu)
                         }
-                        .pickerStyle(.menu)
+                        .listRowBackground(Color.appCard)
+                        .listRowSeparatorTint(Color.appBorder)
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Weekly Schedule")
             .navigationBarTitleDisplayMode(.inline)
@@ -177,5 +211,7 @@ struct ScheduleEditorView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(Color.eCyan)
     }
 }

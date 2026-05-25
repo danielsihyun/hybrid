@@ -14,51 +14,64 @@ struct PlansView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(plans) { plan in
-                    NavigationLink {
-                        PlanDetailView(plan: plan)
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(plan.name)
-                                    .font(.headline)
-                                Text("\(plan.workoutDays.count) workout days")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+            ZStack {
+                Color.appBg.ignoresSafeArea()
+
+                List {
+                    ForEach(plans) { plan in
+                        NavigationLink {
+                            PlanDetailView(plan: plan)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(plan.name)
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundStyle(.white)
+                                    Text("\(plan.workoutDays.count) workout days")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color.appSubtext)
+                                }
+                                Spacer()
+                                if plan.isActive {
+                                    Text("ACTIVE")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Color.eCyan)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 4)
+                                        .background(Color.eCyan.opacity(0.12))
+                                        .clipShape(Capsule())
+                                }
                             }
-                            Spacer()
-                            if plan.isActive {
-                                Label("Active", systemImage: "checkmark.circle.fill")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.green)
-                                    .labelStyle(.titleAndIcon)
+                            .padding(.vertical, 4)
+                        }
+                        .listRowBackground(Color.appCard)
+                        .listRowSeparatorTint(Color.appBorder)
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                setActive(plan: plan)
+                            } label: {
+                                Label(plan.isActive ? "Deactivate" : "Set Active", systemImage: plan.isActive ? "xmark.circle" : "checkmark.circle")
                             }
+                            .tint(plan.isActive ? .orange : Color.eCyan)
                         }
-                    }
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            setActive(plan: plan)
-                        } label: {
-                            Label(plan.isActive ? "Deactivate" : "Set Active", systemImage: plan.isActive ? "xmark.circle" : "checkmark.circle")
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                deletePlan(plan)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                planToRename = plan
+                                renameText = plan.name
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(Color.eCyan)
                         }
-                        .tint(plan.isActive ? .orange : .green)
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            deletePlan(plan)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        Button {
-                            planToRename = plan
-                            renameText = plan.name
-                        } label: {
-                            Label("Rename", systemImage: "pencil")
-                        }
-                        .tint(.blue)
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Plans")
             .toolbar {
@@ -67,6 +80,7 @@ struct PlansView: View {
                         showNewPlan = true
                     } label: {
                         Image(systemName: "plus")
+                            .foregroundStyle(Color.eCyan)
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
