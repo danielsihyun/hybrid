@@ -1,5 +1,6 @@
 import SwiftUI
 
+// MARK: - Colors
 extension Color {
     static let appBg       = Color(red: 10/255, green: 10/255, blue: 15/255)
     static let appCard     = Color(red: 22/255, green: 22/255, blue: 29/255)
@@ -12,6 +13,7 @@ extension Color {
     static let ePink       = Color(red: 1,       green: 77/255,  blue: 158/255)
 }
 
+// MARK: - Gradients
 extension LinearGradient {
     static let cyan     = LinearGradient(colors: [Color(red: 0,      green: 217/255, blue: 1),       Color(red: 0,      green: 153/255, blue: 1)],       startPoint: .topLeading, endPoint: .bottomTrailing)
     static let green    = LinearGradient(colors: [Color(red: 0,      green: 1,       blue: 136/255), Color(red: 0,      green: 204/255, blue: 106/255)],  startPoint: .topLeading, endPoint: .bottomTrailing)
